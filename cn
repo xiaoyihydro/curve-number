@@ -1,0 +1,215 @@
+#get curve number
+import arcpy,os
+import win32com
+from win32com.client import Dispatch, constants
+from arcpy import env
+#定义函数，获取不同土壤质地、不同土地利用类型的cn值
+def get_cn(trzd,uslu):
+    if trzd =="A":
+        if uslu ==1:
+            cn =65
+        elif uslu == 22:
+            cn = 45
+        elif uslu == 23:
+            cn = 36
+        elif uslu == 24:
+            cn = 30
+        elif uslu == 31:
+            cn = 48
+        elif uslu == 32:
+            cn = 35
+        elif uslu == 33:
+            cn = 30
+        elif uslu == 41:
+            cn = 68
+        elif uslu == 42:
+            cn = 49
+        elif uslu == 43:
+            cn = 39
+        elif uslu == 5:
+            cn = 98
+        elif uslu == 6:
+            cn = 98
+        elif uslu == 7:
+            cn = 77
+        elif uslu == 8:
+            cn = 77
+        elif uslu == 9:
+            cn = 98
+    if trzd =="B":
+        if uslu ==1:
+            cn =75
+        elif uslu == 22:
+            cn = 66
+        elif uslu == 23:
+            cn = 60
+        elif uslu == 24:
+            cn = 55
+        elif uslu == 31:
+            cn = 67
+        elif uslu == 32:
+            cn = 56
+        elif uslu == 33:
+            cn = 48
+        elif uslu == 41:
+            cn = 79
+        elif uslu == 42:
+            cn = 69
+        elif uslu == 43:
+            cn = 61
+        elif uslu == 5:
+            cn = 98
+        elif uslu == 6:
+            cn = 98
+        elif uslu == 7:
+            cn = 85
+        elif uslu == 8:
+            cn = 86
+        elif uslu == 9:
+            cn = 98
+    if trzd =="C":
+        if uslu ==1:
+            cn =82
+        elif uslu == 22:
+            cn = 77
+        elif uslu == 23:
+            cn = 73
+        elif uslu == 24:
+            cn = 70
+        elif uslu == 31:
+            cn = 77
+        elif uslu == 32:
+            cn = 70
+        elif uslu == 33:
+            cn = 65
+        elif uslu == 41:
+            cn = 86
+        elif uslu == 42:
+            cn = 79
+        elif uslu == 43:
+            cn = 74
+        elif uslu == 5:
+            cn = 98
+        elif uslu == 6:
+            cn = 98
+        elif uslu == 7:
+            cn = 90
+        elif uslu == 8:
+            cn = 91
+        elif uslu == 9:
+            cn = 98
+    if trzd =="D":
+        if uslu ==1:
+            cn = 86
+        elif uslu == 22:
+            cn = 83
+        elif uslu == 23:
+            cn = 79
+        elif uslu == 24:
+            cn = 77
+        elif uslu == 31:
+            cn = 83
+        elif uslu == 32:
+            cn = 77
+        elif uslu == 33:
+            cn = 73
+        elif uslu == 41:
+            cn = 89
+        elif uslu == 42:
+            cn = 84
+        elif uslu == 43:
+            cn = 80
+        elif uslu == 5:
+            cn = 98
+        elif uslu == 6:
+            cn = 98
+        elif uslu == 7:
+            cn = 92
+        elif uslu == 8:
+            cn = 94
+        elif uslu == 9:
+            cn = 98
+    else:
+        v_list = u"CN值不存在,请仔细检查输入参数！"
+        print v_list
+    return cn
+    
+#设置输入数据和过程数据存放路径
+file_excel = r"H:\cn.xlsx"#cn值表
+in_root = r"H:\test"#土地利用父目录
+slta_root = ur"D:\SCS\slta"#土壤质地目录
+xlApp = win32com.client.Dispatch('Excel.Application')
+xlBook = xlApp.Workbooks.Open(file_excel, ReadOnly = False)
+sht = xlBook.Worksheets('Sheet1')
+sht.Cells(1,1).Value = "N_WSCD"
+sht.Cells(1,2).Value = "CN"
+i = 2
+field = "TDLYCD"
+field1 = "AREA"
+for files in os.listdir(in_root):
+    n_wscd = files.split("_")[0]#小流域代码
+    fclist = []
+    env.workspace = in_root + os.path.sep + files#输出环境变量
+    fcs = arcpy.ListFeatureClasses()
+    for fc in fcs:
+        newfc = env.workspace + os.path.sep + fc
+        fclist.append(newfc)
+    #print fclist
+    if len(fclist) == 1:#只有一类土壤质地类型
+        infc = fclist[0]
+        arcpy.CalculateField_management( infc, "AREA", "!shape.area!", "PYTHON_9.3")
+        geometries = arcpy.CopyFeatures_management( infc , arcpy.Geometry())
+        area = sum([g.area for g in geometries])#获取土地利用总面积,即小流域面积
+        cnlist = []
+        count = arcpy.GetCount_management( infc )
+        cursor = arcpy.SearchCursor(infc)
+        slts = (infc.split("_")[-1]).split(".")[0]
+        #print slts
+        if count ==0:
+            print files,u"数据有误,请仔细检查......"
+        if count > 0:#数据无误
+            for row in cursor:
+                uslu = int(row.getValue(field))
+                #print uslu
+                area_x = row.getValue(field1)
+                cn2 = get_cn(slts,uslu)
+                cn_x = cn2*area_x/area
+                cnlist.append(cn_x)
+        cn = round(sum(cnlist),4)
+        #################################
+        #print cnlist
+    if len(fclist) > 1:#包含多类土壤质地类型
+        #print u"列表长度：",len(fclist)
+        slta_shp = slta_root + "\\"+files[:-4]+"slta.shp"
+        geometries_slta = arcpy.CopyFeatures_management(slta_shp , arcpy.Geometry())
+        area_slta = sum([g.area for g in geometries_slta])#获取小流域总面积
+        #print "area_slta:",area_slta
+        cnlist1 = []
+        for x in xrange(len(fclist)):
+            infc1 = fclist[x]
+            #print infc1
+            arcpy.CalculateField_management(infc1, "AREA", "!shape.area!", "PYTHON_9.3")
+            count1 = arcpy.GetCount_management( infc1 )
+            slts1 = (infc1.split("_")[-1]).split(".")[0]
+            if count1 == 0:
+                print files,u"数据有误,请仔细检查......"
+            if count1 > 0:  #数据无误
+                curs = arcpy.SearchCursor(infc1)
+                for r in curs:
+                    uslu1 = int(r.getValue(field))
+                    area_y = r.getValue(field1)
+                    cn1 = get_cn(slts1,uslu1)
+                    cn_slta = cn1*area_y/area_slta#cn2*area_y/area_uslu*(area_uslu/area_slta)
+                    #print cn_slta,uslu1,area_y,cn1
+                    cnlist1.append(cn_slta)
+        #print cnlist1
+        cn = round(sum(cnlist1),4)
+    print files,cn
+    ##################################
+    sht.Cells( i , 1).Value = n_wscd
+    sht.Cells( i , 2).Value = cn
+    i = i+1
+out_excel = ur"F:\cn值2.xls"
+xlBook.SaveAs(out_excel)
+xlBook.Close(True)
+xlApp.Quit() 
