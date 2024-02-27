@@ -1,0 +1,12 @@
+#get one wata SLTA
+import arcpy,os
+from arcpy import env
+env.workspace = ur"E:\scs\wata"
+in_slta_shp = ur"E:\SCS\_slta.shp"
+out_slta_root = ur"E:\scs\SLTA"
+fcs = arcpy.ListFeatureClasses()
+for fc in fcs:
+    slta_name = fc.replace("_wata.shp", "_slta.shp")
+    out_slta = out_slta_root + os.path.sep + slta_name
+    arcpy.Clip_analysis(in_slta_shp , fc , out_slta)
+    print slta_name
