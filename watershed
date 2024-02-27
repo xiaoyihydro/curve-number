@@ -1,8 +1,8 @@
 #get one wata
 import arcpy,os
 from arcpy import env
-in_wata_shp = ur"E:\2022cn.shp"
-out_wata_root = ur"E:\scs\wata"
+in_wata_shp = ur"E:\hydro_SCS\cn.shp"
+out_wata_root = ur"E:\hydro\scs\wata"
 i = 0
 field = "N_WSCD"
 cursor = arcpy.UpdateCursor(in_wata_shp)
