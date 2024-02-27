@@ -1,0 +1,19 @@
+#get one wata
+import arcpy,os
+from arcpy import env
+in_wata_shp = ur"E:\2022cn.shp"
+out_wata_root = ur"E:\scs\wata"
+i = 0
+field = "N_WSCD"
+cursor = arcpy.UpdateCursor(in_wata_shp)
+arcpy.MakeFeatureLayer_management (in_wata_shp, "stateslyr")
+for row in cursor:
+    if  row.getValue("FID") == i:
+        watershed_name =  row.getValue(field)+"_"+str(i) + "_wata.shp"
+        #watershed_name =  row.getValue(field)+"_"+str(i) + "_river.shp"
+        expression = ' "FID" =  '+str(i)
+        print watershed_name
+        arcpy.SelectLayerByAttribute_management ("stateslyr", "NEW_SELECTION", expression)
+        watershed_shp = out_wata_root+os.path.sep + watershed_name
+        arcpy.CopyFeatures_management("stateslyr", watershed_shp)
+        i = i+1
