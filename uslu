@@ -1,0 +1,31 @@
+#get one wata uslu
+import arcpy,os
+from arcpy import env
+env.workspace = r"E:\hydroSCS\SLTA"
+in_uslu_shp = r"E:\hydroSCS\hydro_uslu.shp"
+out_uslu_root = r"E:\hydroSCS\uslu"
+fcs = arcpy.ListFeatureClasses()
+for fc in fcs:
+    layer = fc.split(".")[0]
+    cursor = arcpy.SearchCursor(fc)
+    arcpy.MakeFeatureLayer_management (fc, layer)
+    #count = arcpy.GetCount_management(fc)
+    #if count == 1:
+    x = 0
+    for row in cursor:    
+        if  row.getValue("FID") == x:
+            field = "CNLX"
+            uslu_name =  (fc.split(".")[0] ).replace( "slta" , "uslu")+  "_"  + row.getValue(field)  +".shp"
+            print uslu_name
+            expression = ' "FID" =  '+str(x)
+            files = out_uslu_root + os.path.sep + (fc.split(".")[0] ).replace( "slta" , "uslu")
+            folder = os.path.exists(files)
+            if not folder:
+                #os.makedirs(files)
+                os.mkdir(files)
+            else:
+                pass
+            arcpy.SelectLayerByAttribute_management (layer, "NEW_SELECTION", expression)
+            uslu_shp = files+os.path.sep + uslu_name
+            arcpy.Clip_analysis(in_uslu_shp , layer , uslu_shp )
+            x = x+1
